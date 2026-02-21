@@ -19,6 +19,7 @@ Design principles:
 
 from __future__ import annotations
 
+import threading
 import tkinter as tk
 from typing import TYPE_CHECKING
 
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from ui.app import App
 
 from ui.app import COLORS, FONTS, PADDING
-from response import run_assessment, AlertConfig, EmergencyContact
+from response import run_assessment, AlertConfig, EmergencyContact, EmergencyAlerter
 
 
 # ---------------------------------------------------------------------------
@@ -287,6 +288,17 @@ class SetupScreen(tk.Frame):
             anchor="w",
         ).pack(fill=tk.X, padx=p, pady=(p, 6))
 
+        tk.Label(
+            inner,
+            text="Enter the monitored user's name and emergency contacts below.\n"
+                 "Twilio credentials are loaded automatically from your .env file.",
+            bg=COLORS["bg"],
+            fg=COLORS["text_secondary"],
+            font=(FONTS["body"][0], int(FONTS["body"][1] * s)),
+            anchor="w",
+            justify=tk.LEFT,
+            wraplength=900,
+        ).pack(fill=tk.X, padx=p, pady=(0, g))
 
         tk.Frame(inner, bg=COLORS["border"], height=2).pack(fill=tk.X, padx=p, pady=(0, g))
 
@@ -527,39 +539,29 @@ class SetupScreen(tk.Frame):
         if config is None:
             return
 
-        self._set_status(
-            "Starting test alert — the assistant will speak and listen for your response...",
-            color="accent",
-        )
+        self._set_status("Sending test call to emergency contacts...", color="accent")
         self.configure(cursor="watch")
-        # Defer by 50ms so the status label paints before the blocking audio pipeline starts.
-        # pyttsx3 and sounddevice both require the macOS main thread — do NOT use threading here.
-        self.after(50, lambda: self._run_assessment(config))
+        # Run on background thread — EmergencyAlerter only uses Twilio (network),
+        # no audio hardware required, so threading is safe here.
+        threading.Thread(target=self._run_test_alert, args=(config,), daemon=True).start()
 
-    def _run_assessment(self, config) -> None:
-        """Run the full assessment pipeline on the main thread (required for pyttsx3 + sounddevice on macOS)."""
+    def _run_test_alert(self, config) -> None:
+        """Send a test emergency call directly, skipping the voice check-in."""
         try:
-            result = run_assessment(
-                config=config,
-                on_status=lambda msg: self._set_status(msg),
-                test_mode=True,
+            alerter = EmergencyAlerter(config)
+            results = alerter.send_alert(test_mode=True)
+            successes = sum(1 for r in results if r.success)
+            total     = len(results)
+            self._set_status(
+                f"✓  Test call sent",
+                color="success",
             )
-            if result.alert_sent:
-                successes = sum(1 for r in result.alert_results if r.success)
-                total     = len(result.alert_results)
-                self._set_status(
-                    f"✓  Test complete — {successes} of {total} actions succeeded.",
-                    color="success",
-                )
-            else:
-                self._set_status(
-                    f"Check-in result: {result.outcome.value}. No alert was triggered.",
-                    color="text_secondary",
-                )
+        except EnvironmentError as exc:
+            self._set_status(f"Missing credentials: {exc}", color="danger")
         except Exception as exc:
             self._set_status(f"Error: {exc}", color="danger")
         finally:
-            self.configure(cursor="")
+            self.after(0, lambda: self.configure(cursor=""))
 
     def _on_save(self) -> None:
         config = self._build_config()
@@ -576,7 +578,7 @@ class SetupScreen(tk.Frame):
             }
             with open("config.json", "w") as f:
                 json.dump(data, f, indent=2)
-            self._set_status("✓  Configuration saved", color="success")
+            self._set_status("✓  Configuration saved to config.json.", color="success")
         except Exception as exc:
             self._set_status(f"Failed to save: {exc}", color="danger")
 
