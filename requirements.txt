@@ -4,3 +4,10 @@ soundfile
 pywhispercpp
 twilio
 python-dotenv
+
+mediapipe
+opencv-python
+scikit-learn
+pandas
+numpy
+matplotlib
