@@ -8,8 +8,8 @@ from collections import deque
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from detection.pose_estimator import PoseEstimator
-from detection.feature_engineer import FeatureEngineer, FEATURE_COLS, WINDOW_SIZE
+from fall_detection.rf_based.pose_estimator import PoseEstimator
+from fall_detection.rf_based.feature_engineer import FeatureEngineer, FEATURE_COLS, WINDOW_SIZE
 
 # ---- Configuration -------------------------------------------------------
 DATASETS = {

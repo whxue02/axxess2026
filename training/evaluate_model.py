@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # Must come before detection imports
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from detection.feature_engineer import FEATURE_COLS
+from fall_detection.rf_based.feature_engineer import FEATURE_COLS
 
 from sklearn.metrics import (
     confusion_matrix, ConfusionMatrixDisplay,
