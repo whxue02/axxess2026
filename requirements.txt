@@ -1,0 +1,6 @@
+pyttsx3
+sounddevice
+soundfile
+pywhispercpp
+twilio
+python-dotenv
