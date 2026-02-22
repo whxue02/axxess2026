@@ -6,7 +6,7 @@ from pathlib import Path
 MODEL_PATH = Path('fall_detection/rf_based/models/classifier.pkl')
 
 class FallClassifier:
-    def __init__(self, confirmation_windows=3):
+    def __init__(self, confirmation_windows=2):
         """
         confirmation_windows: how many consecutive windows must predict 'fall'
         before we declare an actual fall event.

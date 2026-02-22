@@ -1,6 +1,5 @@
 .env
 __pycache__
-\testing_stuff
 config.json
 /training/data/le2i
 /training/data/keypoints_features.csv
