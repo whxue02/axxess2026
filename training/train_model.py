@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from fall_detection.rf_based.feature_engineer import FEATURE_COLS
+from fall_detection.feature_engineer import FEATURE_COLS
 
 CSV_PATH   = Path('training/data/keypoints_features.csv')
 MODEL_PATH = Path('detection/models/classifier.pkl')

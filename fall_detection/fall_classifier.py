@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from pathlib import Path
 
-MODEL_PATH = Path('fall_detection/rf_based/models/classifier.pkl')
+MODEL_PATH = Path('fall_detection/models/classifier.pkl')
 
 class FallClassifier:
     def __init__(self, confirmation_windows=2):
