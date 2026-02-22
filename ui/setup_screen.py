@@ -44,10 +44,10 @@ def _add_placeholder(entry: tk.Entry, var: tk.StringVar, placeholder: str) -> No
     def _on_focus_out(e):
         if not var.get().strip():
             var.set(placeholder)
-            entry.configure(fg=COLORS["text_disabled"])
+            entry.configure(fg=COLORS["text_primary"])
 
     var.set(placeholder)
-    entry.configure(fg=COLORS["text_disabled"])
+    entry.configure(fg=COLORS["text_primary"])
     entry.bind("<FocusIn>",  _on_focus_in)
     entry.bind("<FocusOut>", _on_focus_out)
 
@@ -117,7 +117,7 @@ class _ContactRow(tk.Frame):
             self,
             text=f"{self.index + 1}.",
             bg=COLORS["surface"],
-            fg=COLORS["text_secondary"],
+            fg=COLORS["text_primary"],
             font=(FONTS["label"][0], int(FONTS["label"][1] * s), "bold"),
             width=3,
             anchor="e",
@@ -131,7 +131,7 @@ class _ContactRow(tk.Frame):
             name_col,
             text="Name",
             bg=COLORS["surface"],
-            fg=COLORS["text_secondary"],
+            fg=COLORS["text_primary"],
             font=(FONTS["small"][0], int(FONTS["small"][1] * s)),
             anchor="w",
         ).pack(fill=tk.X, pady=(0, 4))
@@ -160,7 +160,7 @@ class _ContactRow(tk.Frame):
             phone_col,
             text="Phone number (E.164 format)",
             bg=COLORS["surface"],
-            fg=COLORS["text_secondary"],
+            fg=COLORS["text_primary"],
             font=(FONTS["small"][0], int(FONTS["small"][1] * s)),
             anchor="w",
         ).pack(fill=tk.X, pady=(0, 4))
@@ -237,8 +237,13 @@ class SetupScreen(tk.Frame):
         self._user_name_var = tk.StringVar()
         self._status_var    = tk.StringVar(value="")
 
+        # Persisted values — survive _populate() rebuilds on resize
+        self._saved_user_name: str = ""
+        self._saved_contacts: list[dict] = []
+
         self.bind("<Configure>", self._on_resize)
         self._build()
+        self.after(100, self._load_config)
 
     # -----------------------------------------------------------------------
     # Build
@@ -288,18 +293,6 @@ class SetupScreen(tk.Frame):
             anchor="w",
         ).pack(fill=tk.X, padx=p, pady=(p, 6))
 
-        tk.Label(
-            inner,
-            text="Enter the monitored user's name and emergency contacts below.\n"
-                 "Twilio credentials are loaded automatically from your .env file.",
-            bg=COLORS["bg"],
-            fg=COLORS["text_secondary"],
-            font=(FONTS["body"][0], int(FONTS["body"][1] * s)),
-            anchor="w",
-            justify=tk.LEFT,
-            wraplength=900,
-        ).pack(fill=tk.X, padx=p, pady=(0, g))
-
         tk.Frame(inner, bg=COLORS["border"], height=2).pack(fill=tk.X, padx=p, pady=(0, g))
 
         # ── Section 1: User name ───────────────────────────────────────────
@@ -344,7 +337,7 @@ class SetupScreen(tk.Frame):
             contacts_header_row,
             text="EMERGENCY CONTACTS",
             bg=COLORS["bg"],
-            fg=COLORS["text_secondary"],
+            fg=COLORS["text_primary"],
             font=(FONTS["small"][0], int(FONTS["small"][1] * s), "bold"),
             anchor="w",
         ).pack(side=tk.LEFT)
@@ -353,7 +346,7 @@ class SetupScreen(tk.Frame):
             contacts_header_row,
             text="All contacts receive a call when an alert fires.",
             bg=COLORS["bg"],
-            fg=COLORS["text_secondary"],
+            fg=COLORS["text_primary"],
             font=(FONTS["small"][0], int(FONTS["small"][1] * s)),
             anchor="e",
         ).pack(side=tk.RIGHT)
@@ -419,13 +412,16 @@ class SetupScreen(tk.Frame):
             inner,
             textvariable=self._status_var,
             bg=COLORS["bg"],
-            fg=COLORS["text_secondary"],
+            fg=COLORS["text_primary"],
             font=(FONTS["body"][0], int(FONTS["body"][1] * s)),
             anchor="w",
             wraplength=int(860 * s),
             justify=tk.LEFT,
         )
         self._status_label.pack(fill=tk.X, padx=p, pady=(int(8 * s), p))
+
+        # Restore any previously loaded/saved values after rebuild
+        self.after(0, self._restore_saved_values)
 
     # -----------------------------------------------------------------------
     # Widget helpers
@@ -436,7 +432,7 @@ class SetupScreen(tk.Frame):
             parent,
             text=text,
             bg=COLORS["bg"],
-            fg=COLORS["text_secondary"],
+            fg=COLORS["text_primary"],
             font=(FONTS["small"][0], int(FONTS["small"][1] * s), "bold"),
             anchor="w",
         ).pack(fill=tk.X, padx=padx, pady=(0, 8))
@@ -553,7 +549,7 @@ class SetupScreen(tk.Frame):
             successes = sum(1 for r in results if r.success)
             total     = len(results)
             self._set_status(
-                f"✓  Test call sent",
+                f"✓  Test call sent.",
                 color="success",
             )
         except EnvironmentError as exc:
@@ -578,7 +574,9 @@ class SetupScreen(tk.Frame):
             }
             with open("config.json", "w") as f:
                 json.dump(data, f, indent=2)
-            self._set_status("✓  Configuration saved to config.json.", color="success")
+            self._saved_user_name = config.user_name
+            self._saved_contacts  = data["contacts"]
+            self._set_status("✓  Configuration saved.", color="success")
         except Exception as exc:
             self._set_status(f"Failed to save: {exc}", color="danger")
 
@@ -586,10 +584,40 @@ class SetupScreen(tk.Frame):
     # Helpers
     # -----------------------------------------------------------------------
 
-    def _set_status(self, msg: str, color: str = "text_secondary") -> None:
+    # -----------------------------------------------------------------------
+    # Config persistence
+    # -----------------------------------------------------------------------
+
+    def _load_config(self) -> None:
+        """Read config.json and populate the form if the file exists."""
+        import json, os
+        if not os.path.exists("config.json"):
+            return
+        try:
+            with open("config.json") as f:
+                data = json.load(f)
+            self._saved_user_name = data.get("user_name", "")
+            self._saved_contacts  = data.get("contacts", [])
+            self._restore_saved_values()
+            self._set_status("✓  Loaded saved configuration.", color="success")
+        except Exception as exc:
+            self._set_status(f"Could not load configuration: {exc}", color="warning")
+
+    def _restore_saved_values(self) -> None:
+        """Push saved values into live form widgets. Called after every _populate() rebuild."""
+        if self._saved_user_name:
+            self._user_name_var.set(self._saved_user_name)
+
+        if self._saved_contacts:
+            while len(self._contact_rows) < len(self._saved_contacts):
+                self._add_contact_row()
+            for row, contact in zip(self._contact_rows, self._saved_contacts):
+                row.set(contact.get("name", ""), contact.get("phone", ""))
+
+    def _set_status(self, msg: str, color: str = "text_primary") -> None:
         def _update():
             self._status_var.set(msg)
-            self._status_label.configure(fg=COLORS.get(color, COLORS["text_secondary"]))
+            self._status_label.configure(fg=COLORS.get(color, COLORS["text_primary"]))
         self.after(0, _update)
 
     def get_config(self) -> AlertConfig | None:

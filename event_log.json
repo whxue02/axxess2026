@@ -1,0 +1,38 @@
+[
+  {
+    "time": "2026-02-21 22:52:25",
+    "type": "near_fall",
+    "detail": "Near-fall detected. Rules fired: recovery_detected"
+  },
+  {
+    "time": "2026-02-21 22:52:28",
+    "type": "near_fall",
+    "detail": "Near-fall detected. Rules fired: recovery_detected"
+  },
+  {
+    "time": "2026-02-21 22:52:30",
+    "type": "fall",
+    "detail": "Fall confirmed by RF classifier. Starting assessment.  Clip saved: storage/fall_clips/fall_20260221_225230.mp4",
+    "clip_path": "storage/fall_clips/fall_20260221_225230.mp4"
+  },
+  {
+    "time": "2026-02-21 22:52:30",
+    "type": "assessment",
+    "detail": "Checking in with user..."
+  },
+  {
+    "time": "2026-02-21 22:52:50",
+    "type": "assessment",
+    "detail": "User requested help. Contacting emergency contacts..."
+  },
+  {
+    "time": "2026-02-21 22:52:50",
+    "type": "assessment",
+    "detail": "Alert sequence complete \u2014 2/2 actions succeeded."
+  },
+  {
+    "time": "2026-02-21 22:52:50",
+    "type": "assessment",
+    "detail": "Assessment complete \u2014 outcome: help_needed | alert sent: True"
+  }
+]

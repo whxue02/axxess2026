@@ -154,9 +154,9 @@ class DetectionPipeline:
                 results.pose_landmarks,
                 self._mp_pose.POSE_CONNECTIONS,
                 landmark_drawing_spec=self._mp_drawing.DrawingSpec(
-                    color=(245, 117, 66), thickness=2, circle_radius=2),
+                    color=(0, 0, 0), thickness=6, circle_radius=2),
                 connection_drawing_spec=self._mp_drawing.DrawingSpec(
-                    color=(245, 66, 230), thickness=2),
+                    color=(0, 0, 0), thickness=6),
             )
 
     def _draw_labels(self, frame, rf_status, near_fall_status, debug_rules):

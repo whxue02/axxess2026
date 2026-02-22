@@ -12,7 +12,7 @@ Usage
 
 import argparse
 import cv2
-from fall_detection.rf_based import DetectionPipeline
+from fall_detection import DetectionPipeline
 
 
 def main(source):

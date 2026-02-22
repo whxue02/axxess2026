@@ -105,8 +105,51 @@ class App(tk.Tk):
         self._screens: dict[str, tk.Frame] = {}
         self._current_screen: str | None = None
 
+        # Shared event log — written by MonitoringScreen, read by EventLogScreen
+        # Each entry: {"time": str, "type": "fall"|"near_fall"|"assessment", "detail": str}
+        self.event_log: list[dict] = self._load_event_log()
+
         # Start on the setup screen
         self.show_screen("setup")
+
+        # Clean up monitoring on window close
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _on_close(self) -> None:
+        monitor = self._screens.get("monitoring")
+        if monitor is not None:
+            monitor.on_close()
+        self._save_event_log()
+        self.destroy()
+
+    # -----------------------------------------------------------------------
+    # Event log persistence
+    # -----------------------------------------------------------------------
+
+    # Always save next to config.json in the project root,
+    # regardless of the working directory when the app is launched.
+    LOG_FILE = str(__import__("pathlib").Path(__file__).parent.parent / "event_log.json")
+
+    def _load_event_log(self) -> list[dict]:
+        """Read persisted event log from disk. Returns empty list if not found."""
+        import json, os
+        if not os.path.exists(self.LOG_FILE):
+            return []
+        try:
+            with open(self.LOG_FILE) as f:
+                data = json.load(f)
+            return data if isinstance(data, list) else []
+        except Exception:
+            return []
+
+    def _save_event_log(self) -> None:
+        """Write the current event log to disk."""
+        import json
+        try:
+            with open(self.LOG_FILE, "w") as f:
+                json.dump(self.event_log, f, indent=2)
+        except Exception:
+            pass  # Don't crash on close if save fails
 
     # -----------------------------------------------------------------------
     # Public API
@@ -135,6 +178,33 @@ class App(tk.Tk):
     def get_screen(self, name: str) -> tk.Frame | None:
         """Return an already-instantiated screen by name, or None."""
         return self._screens.get(name)
+
+    def log_event(self, event_type: str, detail: str = "") -> None:
+        """
+        Append an event to the shared log and notify EventLogScreen if visible.
+
+        Parameters
+        ----------
+        event_type : str
+            One of: "fall", "near_fall", "assessment", "info"
+        detail : str
+            Human-readable description of the event.
+        """
+        from datetime import datetime
+        entry = {
+            "time":   datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "type":   event_type,
+            "detail": detail,
+        }
+        self.event_log.append(entry)
+
+        # Live-push to event log screen if it's already instantiated
+        log_screen = self._screens.get("log")
+        if log_screen is not None:
+            log_screen.push_event(entry)
+
+        # Return the entry so callers can mutate it later (e.g. add clip_path)
+        return entry
 
     # -----------------------------------------------------------------------
     # Internal

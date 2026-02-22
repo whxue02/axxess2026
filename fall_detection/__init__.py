@@ -44,6 +44,7 @@ from .pose_estimator    import PoseEstimator
 from .feature_engineer  import FeatureEngineer
 from .fall_classifier   import FallClassifier
 from .near_fall_detector import NearFallDetector
+from .event_logger import EventLogger
 
 __all__ = [
     'DetectionPipeline',
@@ -52,6 +53,7 @@ __all__ = [
     'FeatureEngineer',
     'FallClassifier',
     'NearFallDetector',
+    'EventLogger'
 ]
 
 __version__ = '0.1.0'

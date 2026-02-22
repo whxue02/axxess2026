@@ -6,7 +6,7 @@ from datetime import datetime
 
 # How many seconds to save before and after the fall
 SECONDS_BEFORE = 5
-SECONDS_AFTER  = 3
+SECONDS_AFTER  = 0
 FPS            = 15  # approximate webcam fps
 
 FRAMES_BEFORE  = SECONDS_BEFORE * FPS   # 75 frames

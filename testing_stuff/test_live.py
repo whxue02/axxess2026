@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from fall_detection.feature_engineer import FeatureEngineer, WINDOW_SIZE
 from fall_detection.fall_classifier import FallClassifier
-from storage.event_logger import EventLogger
+from fall_detection.event_logger import EventLogger
 
 import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils
